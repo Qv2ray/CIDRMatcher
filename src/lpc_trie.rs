@@ -114,7 +114,7 @@ mod lpc_trie {
             for (idx,node) in old_child.iter_mut().enumerate(){
                 match node{
                     TrieNode::NODE(n) if n.pos>self.pos+self.bits-1 => {
-                        if n.key.extract_bits(self.pos+self.bits-1,1)==T::zero(){
+                        if n.key.extract_bits(self.pos+self.bits-1,1).is_empty(){
                             self.put_child(2*idx,node);
                         } else {
                             self.put_child(2*idx+1, node);
@@ -139,7 +139,7 @@ mod lpc_trie {
                         }
                     }
                     TrieNode::LEAF(n) => {
-                        if n.key.extract_bits(self.pos+self.bits-1,1)==T::zero(){
+                        if n.key.extract_bits(self.pos+self.bits-1,1).is_empty(){
                             self.put_child(2*idx,node);
                         } else {
                             self.put_child(2*idx+1, node);
@@ -363,7 +363,7 @@ mod lpc_trie {
                     let new_pos = key.mismatch(pos, &trie.key());
                     let mut node = InternalNode::new(trie.key(), new_pos, 1);
                     let mut leaf = TrieNode::LEAF(Leaf { key });
-                    if key.extract_bits(new_pos, 1) == T::zero() {
+                    if key.extract_bits(new_pos, 1).is_empty() {
                         node.put_child(0, &mut leaf);
                         node.put_child(1, trie);
                     } else {

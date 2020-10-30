@@ -1,11 +1,10 @@
 //#![feature(unchecked_math)]
-use num_traits::PrimInt;
 
 pub trait MSB{
     fn msb(&self)->u32;
 }
 
-pub trait BitVec:PrimInt{
+pub trait BitVec:Sized+Copy+Clone+Eq+PartialEq{
     fn empty()->Self;
     // match sub bit vector start at offset and it's length is bits.
     fn sub_equal(&self, offset:u32,bits:u32, other:&Self) -> bool;
@@ -18,6 +17,8 @@ pub trait BitVec:PrimInt{
     fn safe_to_usize(&self) -> usize;
 
     fn from_bit_str(_: &str)->Self;
+
+    fn is_empty(&self)->bool;
 }
 
 
@@ -64,6 +65,11 @@ impl BitVec for u32{
         }
         data|=1<<(31-len);
         data
+    }
+
+    fn is_empty(&self)->bool
+    {
+        *self == 0
     }
 }
 
