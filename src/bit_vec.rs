@@ -1,13 +1,60 @@
 //#![feature(unchecked_math)]
+use num_traits::PrimInt;
 
-#[derive(PartialEq,Eq,Copy, Clone,Debug)]
-pub struct BitVector{
-    data: u32,
-    length: u32
+pub trait MSB{
+    fn msb(&self)->u32;
 }
 
-impl From<&str> for BitVector{
-    fn from(value: &str) -> Self {
+pub trait BitVec:PrimInt{
+    fn empty()->Self;
+    // match sub bit vector start at offset and it's length is bits.
+    fn sub_equal(&self, offset:u32,bits:u32, other:&Self) -> bool;
+    // extract a sub vector start at offset and it's length is bits.
+    fn extract_bits(&self,offset:u32, bits:u32)->Self;
+    // find the left most significant bit position of mismatch sub vec start at offset.
+    // start at 0..31 or 0..63 or 0..128
+    fn mismatch(&self,offset:u32,other:&Self)->u32;
+
+    fn safe_to_usize(&self) -> usize;
+
+    fn from_bit_str(_: &str)->Self;
+}
+
+
+impl BitVec for u32{
+    fn empty()->u32{
+        0
+    }
+
+    // match sub bit vector start at offset and it's length is bits.
+    fn sub_equal(&self, offset:u32, mut bits:u32, other:&u32) -> bool{
+        if bits==0 || offset>=32{
+            return true
+        }
+        bits = if bits>32{32}else{bits};
+        ((other^self)<<offset>>(32-bits)) == 0
+    }
+
+    // extract a sub vector start at offset and it's length is bits.
+    fn extract_bits(&self,offset:u32, bits:u32)->u32{
+        if offset<32{
+            return self<<offset>>(32-bits)
+        }
+        0
+    }
+
+
+    // find the left most significant bit position of mismatch sub vec start at offset.
+    // start at 0..31 or 0..63
+    fn mismatch(&self,offset:u32,other:&u32)->u32{
+        ((other^self)<<offset).msb()+offset
+    }
+
+    fn safe_to_usize(&self) -> usize {
+        *self as usize
+    }
+
+    fn from_bit_str(value: &str) -> Self {
         let mut data:u32=0;
         let len:u32=value.len() as u32;
         for (i,c) in value.chars().enumerate(){
@@ -16,67 +63,8 @@ impl From<&str> for BitVector{
             }
         }
         data|=1<<(31-len);
-        BitVector{
-            data,
-            length: value.len() as u32
-        }
+        data
     }
-}
-
-
-impl BitVector{
-    pub fn empty()->BitVector{
-        BitVector{
-            data: 0,
-            length: 0
-        }
-    }
-
-    pub fn new(mut data:u32, length:u32) ->BitVector{
-        if length==0{
-            return BitVector{
-                data:0,
-                length
-            }
-        }
-        BitVector{
-            data:{
-                data=data>>(32-length)<<(32-length);
-                data|=1<<(31-length);
-                data
-            },
-            length
-        }
-    }
-
-    // match sub bit vector start at offset and it's length is bits.
-    pub fn sub_equal(&self, offset:u32, mut bits:u32, other:&BitVector) -> bool{
-        if bits==0 || offset>=32{
-            return true
-        }
-        bits = if bits>32{32}else{bits};
-        ((other.data^self.data)<<offset>>(32-bits)) == 0
-    }
-
-    // extract a sub vector start at offset and it's length is bits.
-    pub fn extract_bits(&self,offset:u32, bits:u32)->u32{
-        if offset<32{
-            return self.data<<offset>>(32-bits)
-        }
-        0
-    }
-
-
-    // find the left most significant bit position of mismatch sub vec start at offset.
-    // start at 0..31 or 0..63
-    pub fn mismatch(&self,offset:u32,other:&BitVector)->u32{
-        ((other.data^self.data)<<offset).msb()+offset
-    }
-}
-
-trait MSB{
-    fn msb(&self)->u32;
-
 }
 
 impl MSB for u32{
@@ -119,7 +107,7 @@ impl MSB for u64{
 #[test]
 fn test_bit_vec()
 {
-   let m:u64=1;
+    let m:u64=1;
     assert_eq!(m.msb(),63);
 }
 

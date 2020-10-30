@@ -1,21 +1,21 @@
 mod lpc_trie {
-    use crate::bit_vec::BitVector;
+    use crate::bit_vec::{BitVec};
 
     #[derive(Debug)]
-    struct InternalNode {
-        key: BitVector,
+    struct InternalNode<T> {
+        key: T,
         pos: u32,
         // For branching, which indicates must greater than 1.
         bits: u32,
         full_children: u32,
         empty_children: u32,
-        child: Vec<TrieNode>,
+        child: Vec<TrieNode<T>>,
     }
 
-    impl Default for InternalNode{
+    impl<T:BitVec> Default for InternalNode<T>{
         fn default() -> Self {
             InternalNode{
-                key: BitVector::empty(),
+                key: T::empty(),
                 pos: 0,
                 bits: 0,
                 full_children: 0,
@@ -25,10 +25,10 @@ mod lpc_trie {
         }
     }
 
-    impl InternalNode {
+    impl<T:BitVec> InternalNode<T> {
         const HALVE_THRESHOLD:u32 = 25;
         const INFLATE_THRESHOLD:u32 = 50;
-        pub fn new(key:BitVector,pos:u32,bits:u32)->InternalNode{
+        pub fn new(key:T,pos:u32,bits:u32)->InternalNode<T>{
             InternalNode{
                 key,
                 pos,
@@ -39,17 +39,17 @@ mod lpc_trie {
             }
         }
 
-        pub fn get_mut_child(&mut self, idx:u32) ->&mut TrieNode{
-            &mut self.child[idx as usize]
+        pub fn get_mut_child(&mut self, idx:usize) ->&mut TrieNode<T>{
+            &mut self.child[idx]
         }
 
-        pub fn get_child(&self, idx:u32) ->&TrieNode{
-            &self.child[idx as usize]
+        pub fn get_child(&self, idx:usize) ->&TrieNode<T>{
+            &self.child[idx]
         }
 
         // add a child at position idx overwriting the old value.
-        pub fn put_child(&mut self, idx: usize, n:& mut TrieNode) {
-            let child: &TrieNode = &self.child[idx];
+        pub fn put_child(&mut self, idx: usize, n:& mut TrieNode<T>) {
+            let child: &TrieNode<T> = &self.child[idx];
             if n.is_none() && child.is_some() {
                 self.empty_children += 1;
             } else if n.is_some() && child.is_none() {
@@ -65,7 +65,7 @@ mod lpc_trie {
             std::mem::swap(&mut self.child[idx], n);
         }
 
-        fn resize(&mut self) -> TrieNode {
+        fn resize(&mut self) -> TrieNode<T> {
             if self.empty_children as usize == self.child.len() {
                 return TrieNode::NONE
             }
@@ -77,11 +77,11 @@ mod lpc_trie {
                 }
             } else {
                 while self.full_children > 0 && 50 * (self.full_children + self.child.len() as u32 - self.empty_children)
-                    >= InternalNode::INFLATE_THRESHOLD * self.child.len() as u32 {
+                    >= InternalNode::<T>::INFLATE_THRESHOLD * self.child.len() as u32 {
                     self.inflate();
                 }
 
-                while self.bits > 1 && 100 * (self.child.len() as u32 - self.empty_children) < InternalNode::HALVE_THRESHOLD * self.child.len() as u32 {
+                while self.bits > 1 && 100 * (self.child.len() as u32 - self.empty_children) < InternalNode::<T>::HALVE_THRESHOLD * self.child.len() as u32 {
                     self.halve();
                 }
             }
@@ -114,7 +114,7 @@ mod lpc_trie {
             for (idx,node) in old_child.iter_mut().enumerate(){
                 match node{
                     TrieNode::NODE(n) if n.pos>self.pos+self.bits-1 => {
-                        if n.key.extract_bits(self.pos+self.bits-1,1)==0{
+                        if n.key.extract_bits(self.pos+self.bits-1,1)==T::zero(){
                             self.put_child(2*idx,node);
                         } else {
                             self.put_child(2*idx+1, node);
@@ -125,8 +125,8 @@ mod lpc_trie {
                             self.put_child(2*idx, &mut n.child[0]);
                             self.put_child(2*idx+1, &mut n.child[1]);
                         } else {
-                            let mut left=InternalNode::new(BitVector::empty(),n.pos+1,n.bits-1);
-                            let mut right=InternalNode::new(BitVector::empty(),n.pos+1,n.bits-1);
+                            let mut left=InternalNode::new(T::empty(),n.pos+1,n.bits-1);
+                            let mut right=InternalNode::new(T::empty(),n.pos+1,n.bits-1);
                             let size = (1<<(n.bits-1)) as usize;
                             for idx in 0..size{
                                 left.put_child(idx, &mut n.child[idx]);
@@ -139,7 +139,7 @@ mod lpc_trie {
                         }
                     }
                     TrieNode::LEAF(n) => {
-                        if n.key.extract_bits(self.pos+self.bits-1,1)==0{
+                        if n.key.extract_bits(self.pos+self.bits-1,1)==T::zero(){
                             self.put_child(2*idx,node);
                         } else {
                             self.put_child(2*idx+1, node);
@@ -181,7 +181,7 @@ mod lpc_trie {
             }
         }
 
-        fn full(&self, child: &TrieNode) -> bool {
+        fn full(&self, child: &TrieNode<T>) -> bool {
             match child {
                 TrieNode::NODE(v) => {
                     return v.pos == self.pos + self.bits;
@@ -195,18 +195,18 @@ mod lpc_trie {
     }
 
     #[derive(Debug)]
-    struct Leaf {
-        key: BitVector
+    struct Leaf<T> {
+        key: T
     }
 
     #[derive(Debug)]
-    enum TrieNode {
-        NODE(InternalNode),
-        LEAF(Leaf),
+    enum TrieNode<T> {
+        NODE(InternalNode<T>),
+        LEAF(Leaf<T>),
         NONE,
     }
 
-    impl TrieNode {
+    impl<T:BitVec> TrieNode<T> {
         fn is_none(&self) -> bool {
             match self {
                 TrieNode::NONE => { true }
@@ -220,22 +220,22 @@ mod lpc_trie {
             }
         }
 
-        fn key(&self) -> BitVector{
+        fn key(&self) -> T{
             match self {
                 TrieNode::NODE(n) => {n.key}
                 TrieNode::LEAF(l) => {l.key}
-                TrieNode::NONE => {BitVector::empty()}
+                TrieNode::NONE => {T::empty()}
             }
         }
     }
 
-    impl Default for TrieNode {
+    impl<T> Default for TrieNode<T> {
         fn default() -> Self {
             TrieNode::NONE
         }
     }
 
-    impl Clone for TrieNode{
+    impl<T:BitVec> Clone for TrieNode<T>{
         // Only TrieNode NONE is possible clone!
         fn clone(&self) -> Self {
             match self {
@@ -260,7 +260,7 @@ mod lpc_trie {
         }
     }
 
-    impl TrieNode{
+    impl<T:BitVec> TrieNode<T>{
         fn lightweight_clone(&mut self)->Self{
             match self {
                 TrieNode::NONE => {TrieNode::NONE}
@@ -284,14 +284,14 @@ mod lpc_trie {
         }
     }
 
-    pub struct LPCTrie{
-        trie:TrieNode,
+    pub struct LPCTrie<T>{
+        trie:TrieNode<T>,
         size:u32,
         key_found:bool
     }
 
-    impl LPCTrie{
-        fn new()->LPCTrie{
+    impl<T:BitVec> LPCTrie<T>{
+        fn new()->LPCTrie<T>{
             LPCTrie{
                 trie: Default::default(),
                 size: 0,
@@ -304,7 +304,7 @@ mod lpc_trie {
             self.size=0;
         }
 
-        pub fn put(&mut self,key:BitVector){
+        pub fn put(&mut self,key:T){
             self.key_found = false;
             let mut trie = std::mem::take(&mut self.trie);
             let trie= self.insert_impl(key, &mut trie, 0);
@@ -314,13 +314,13 @@ mod lpc_trie {
             }
         }
 
-        pub fn get(&self, key:BitVector)->bool{
-            let mut t:Option<&TrieNode> = Some(&self.trie);
+        pub fn get(&self, key:T)->bool{
+            let mut t:Option<&TrieNode<T>> = Some(&self.trie);
             loop {
                 if let Some(node)=t {
                     match node {
                         TrieNode::NODE(n) => {
-                            t = Some(n.get_child(key.extract_bits(n.pos,n.bits)));
+                            t = Some(n.get_child(key.extract_bits(n.pos,n.bits).safe_to_usize()));
                         }
                         TrieNode::LEAF(l) => {
                             return if l.key == key {
@@ -344,15 +344,15 @@ mod lpc_trie {
             self.size==0
         }
 
-        fn insert_impl(&mut self,key:BitVector,trie:& mut TrieNode,pos:u32)->TrieNode{
+        fn insert_impl(&mut self,key: T,trie:& mut TrieNode<T>,pos:u32)->TrieNode<T>{
             return match trie {
                 TrieNode::NODE(inode) if inode.key.sub_equal(pos, inode.pos - pos, &key) => {
                     let bitpat = key.extract_bits(inode.pos, inode.bits);
                     let insert_pos = inode.pos + inode.bits;
-                    let mut n = self.insert_impl(key, &mut inode.get_mut_child(bitpat).lightweight_clone(),
+                    let mut n = self.insert_impl(key, &mut inode.get_mut_child(bitpat.safe_to_usize()).lightweight_clone(),
                                                  insert_pos
                     );
-                    inode.put_child(bitpat as usize, &mut n);
+                    inode.put_child( bitpat.safe_to_usize() , &mut n);
                     inode.resize()
                 }
                 TrieNode::LEAF(l) if key == l.key => {
@@ -363,7 +363,7 @@ mod lpc_trie {
                     let new_pos = key.mismatch(pos, &trie.key());
                     let mut node = InternalNode::new(trie.key(), new_pos, 1);
                     let mut leaf = TrieNode::LEAF(Leaf { key });
-                    if key.extract_bits(new_pos, 1) == 0 {
+                    if key.extract_bits(new_pos, 1) == T::zero() {
                         node.put_child(0, &mut leaf);
                         node.put_child(1, trie);
                     } else {
@@ -382,34 +382,34 @@ mod lpc_trie {
     #[test]
     fn test_lpc_trie(){
         let mut trie=LPCTrie::new();
-        let bitvecs:Vec<BitVector> = vec![
-            "00010000".into(),
-            "01000010".into(),
-            "00001010".into(),
-            "00101011".into(),
-            "10101101".into(),
-            "10110110".into(),
-            "11011011".into(),
-            "01101110".into(),
-            "10111010".into(),
-            "11101001".into(),
-            "10100111".into(),
-            "10011110".into()
+        let bitvecs:Vec<u32> = vec![
+            u32::from_bit_str("00010000"),
+            u32::from_bit_str("01000010"),
+            u32::from_bit_str("00001010"),
+            u32::from_bit_str("00101011"),
+            u32::from_bit_str("10101101"),
+            u32::from_bit_str("10110110"),
+            u32::from_bit_str("11011011"),
+            u32::from_bit_str("01101110"),
+            u32::from_bit_str("10111010"),
+            u32::from_bit_str("11101001"),
+            u32::from_bit_str("10100111"),
+            u32::from_bit_str("10011110")
         ];
         for bv in bitvecs{
             trie.put(bv);
         }
-        assert_eq!(trie.get("00010000".into()),true);
-        assert_eq!(trie.get("01000010".into()),true);
-        assert_eq!(trie.get("00001010".into()),true);
-        assert_eq!(trie.get("00101011".into()),true);
-        assert_eq!(trie.get("10101101".into()),true);
-        assert_eq!(trie.get("10110110".into()),true);
-        assert_eq!(trie.get("11011011".into()),true);
-        assert_eq!(trie.get("01101110".into()),true);
-        assert_eq!(trie.get("10111010".into()),true);
-        assert_eq!(trie.get("11101001".into()),true);
-        assert_eq!(trie.get("10100111".into()),true);
-        assert_eq!(trie.get("10011110".into()),true);
+        assert_eq!(trie.get(u32::from_bit_str("00010000")),true);
+        assert_eq!(trie.get(u32::from_bit_str("01000010")),true);
+        assert_eq!(trie.get(u32::from_bit_str("00001010")),true);
+        assert_eq!(trie.get(u32::from_bit_str("00101011")),true);
+        assert_eq!(trie.get(u32::from_bit_str("10101101")),true);
+        assert_eq!(trie.get(u32::from_bit_str("10110110")),true);
+        assert_eq!(trie.get(u32::from_bit_str("11011011")),true);
+        assert_eq!(trie.get(u32::from_bit_str("01101110")),true);
+        assert_eq!(trie.get(u32::from_bit_str("10111010")),true);
+        assert_eq!(trie.get(u32::from_bit_str("11101001")),true);
+        assert_eq!(trie.get(u32::from_bit_str("10100111")),true);
+        assert_eq!(trie.get(u32::from_bit_str("10011110")),true);
     }
 }
