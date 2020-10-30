@@ -411,5 +411,70 @@ mod lpc_trie {
         assert_eq!(trie.get(u32::from_bit_str("11101001")),true);
         assert_eq!(trie.get(u32::from_bit_str("10100111")),true);
         assert_eq!(trie.get(u32::from_bit_str("10011110")),true);
+
+
+        let mut trie=LPCTrie::new();
+        let bitvecs:Vec<u64> = vec![
+            u64::from_bit_str("00010000"),
+            u64::from_bit_str("01000010"),
+            u64::from_bit_str("00001010"),
+            u64::from_bit_str("00101011"),
+            u64::from_bit_str("10101101"),
+            u64::from_bit_str("10110110"),
+            u64::from_bit_str("11011011"),
+            u64::from_bit_str("01101110"),
+            u64::from_bit_str("10111010"),
+            u64::from_bit_str("11101001"),
+            u64::from_bit_str("10100111"),
+            u64::from_bit_str("10011110")
+        ];
+        for bv in bitvecs{
+            trie.put(bv);
+        }
+        assert_eq!(trie.get(u64::from_bit_str("00010000")),true);
+        assert_eq!(trie.get(u64::from_bit_str("01000010")),true);
+        assert_eq!(trie.get(u64::from_bit_str("00001010")),true);
+        assert_eq!(trie.get(u64::from_bit_str("00101011")),true);
+        assert_eq!(trie.get(u64::from_bit_str("10101101")),true);
+        assert_eq!(trie.get(u64::from_bit_str("10110110")),true);
+        assert_eq!(trie.get(u64::from_bit_str("11011011")),true);
+        assert_eq!(trie.get(u64::from_bit_str("01101110")),true);
+        assert_eq!(trie.get(u64::from_bit_str("10111010")),true);
+        assert_eq!(trie.get(u64::from_bit_str("11101001")),true);
+        assert_eq!(trie.get(u64::from_bit_str("10100111")),true);
+        assert_eq!(trie.get(u64::from_bit_str("10011110")),true);
+
+
+        let mut trie=LPCTrie::new();
+
+        let bitvecs:Vec<u128> = vec![
+            u128::from_bit_str("00010000"),
+            u128::from_bit_str("01000010"),
+            u128::from_bit_str("00001010"),
+            u128::from_bit_str("00101011"),
+            u128::from_bit_str("10101101"),
+            u128::from_bit_str("10110110"),
+            u128::from_bit_str("11011011"),
+            u128::from_bit_str("01101110"),
+            u128::from_bit_str("10111010"),
+            u128::from_bit_str("11101001"),
+            u128::from_bit_str("10100111"),
+            u128::from_bit_str("10011110")
+        ];
+        for bv in bitvecs{
+            trie.put(bv);
+        }
+        assert_eq!(trie.get(u128::from_bit_str("00010000")),true);
+        assert_eq!(trie.get(u128::from_bit_str("01000010")),true);
+        assert_eq!(trie.get(u128::from_bit_str("00001010")),true);
+        assert_eq!(trie.get(u128::from_bit_str("00101011")),true);
+        assert_eq!(trie.get(u128::from_bit_str("10101101")),true);
+        assert_eq!(trie.get(u128::from_bit_str("10110110")),true);
+        assert_eq!(trie.get(u128::from_bit_str("11011011")),true);
+        assert_eq!(trie.get(u128::from_bit_str("01101110")),true);
+        assert_eq!(trie.get(u128::from_bit_str("10111010")),true);
+        assert_eq!(trie.get(u128::from_bit_str("11101001")),true);
+        assert_eq!(trie.get(u128::from_bit_str("10100111")),true);
+        assert_eq!(trie.get(u128::from_bit_str("10011110")),true);
     }
 }

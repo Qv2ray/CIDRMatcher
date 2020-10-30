@@ -5,6 +5,7 @@ pub trait MSB{
 }
 
 pub trait BitVec:Sized+Copy+Clone+Eq+PartialEq{
+
     fn empty()->Self;
     // match sub bit vector start at offset and it's length is bits.
     fn sub_equal(&self, offset:u32,bits:u32, other:&Self) -> bool;
@@ -21,57 +22,78 @@ pub trait BitVec:Sized+Copy+Clone+Eq+PartialEq{
     fn is_empty(&self)->bool;
 }
 
+const fn bit_size_of<T>()->usize{
+    std::mem::size_of::<T>()*8
+}
 
-impl BitVec for u32{
-    fn empty()->u32{
-        0
-    }
+macro_rules! bit_vec_impl{
+    ($T:ty) => {
+        impl BitVec for $T{
 
-    // match sub bit vector start at offset and it's length is bits.
-    fn sub_equal(&self, offset:u32, mut bits:u32, other:&u32) -> bool{
-        if bits==0 || offset>=32{
-            return true
-        }
-        bits = if bits>32{32}else{bits};
-        ((other^self)<<offset>>(32-bits)) == 0
-    }
+            #[inline(always)]
+            fn empty()->$T{
+                0
+            }
 
-    // extract a sub vector start at offset and it's length is bits.
-    fn extract_bits(&self,offset:u32, bits:u32)->u32{
-        if offset<32{
-            return self<<offset>>(32-bits)
-        }
-        0
-    }
+            // match sub bit vector start at offset and it's length is bits.
+            #[inline]
+            fn sub_equal(&self, offset:u32, mut bits:u32, other:&$T) -> bool{
+                if bits==0 || offset as usize>=bit_size_of::<$T>(){
+                    return true
+                }
+                bits = if bits as usize>bit_size_of::<$T>(){bit_size_of::<$T>() as u32}else{bits};
+                ((other^self)<<offset>>(bit_size_of::<$T>()-bits as usize)) == 0
+            }
+
+            // extract a sub vector start at offset and it's length is bits.
+            #[inline]
+            fn extract_bits(&self,offset:u32, bits:u32)->$T{
+                if (offset as usize)<bit_size_of::<$T>(){
+                    return self<<offset>>(bit_size_of::<$T>()-bits as usize)
+                }
+                0
+            }
 
 
-    // find the left most significant bit position of mismatch sub vec start at offset.
-    // start at 0..31 or 0..63
-    fn mismatch(&self,offset:u32,other:&u32)->u32{
-        ((other^self)<<offset).msb()+offset
-    }
+            // find the left most significant bit position of mismatch sub vec start at offset.
+            // start at 0..31 or 0..63
+            #[inline]
+            fn mismatch(&self,offset:u32,other:&$T)->u32{
+                ((other^self)<<offset>>offset).msb()
+            }
 
-    fn safe_to_usize(&self) -> usize {
-        *self as usize
-    }
+            #[inline(always)]
+            fn safe_to_usize(&self) -> usize {
+                *self as usize
+            }
 
-    fn from_bit_str(value: &str) -> Self {
-        let mut data:u32=0;
-        let len:u32=value.len() as u32;
-        for (i,c) in value.chars().enumerate(){
-            if c=='1'{
-                data|=1<<(31-i);
+            #[inline]
+            fn from_bit_str(value: &str) -> Self {
+                let mut data:$T=0;
+                let len=value.len();
+                for (i,c) in value.chars().enumerate(){
+                    if c=='1'{
+                        println!("f");
+                        data|=1<<(bit_size_of::<$T>()-1-i);
+                    }
+                }
+                println!("g");
+                data|=1<<(bit_size_of::<$T>()-1-len);
+                data
+            }
+
+            #[inline(always)]
+            fn is_empty(&self)->bool
+            {
+                *self == 0
             }
         }
-        data|=1<<(31-len);
-        data
-    }
-
-    fn is_empty(&self)->bool
-    {
-        *self == 0
-    }
+    };
 }
+
+bit_vec_impl!(u32);
+bit_vec_impl!(u64);
+bit_vec_impl!(u128);
 
 impl MSB for u32{
     fn msb(&self) -> u32 {
@@ -109,6 +131,19 @@ impl MSB for u64{
     }
 }
 
+impl MSB for u128{
+    fn msb(&self) -> u32 {
+        let mut n=0;
+        if ((0xffffffffffffffff0000000000000000>>n)&self)==0{n+=64}
+        if ((0xffffffff000000000000000000000000>>n)&self)==0{n+=32}
+        if ((0xffff0000000000000000000000000000>>n)&self)==0{n+=16}
+        if ((0xff000000000000000000000000000000>>n)&self)==0{n+=8}
+        if ((0xf0000000000000000000000000000000>>n)&self)==0{n+=4}
+        if ((0xc0000000000000000000000000000000>>n)&self)==0{n+=2}
+        if ((0x80000000000000000000000000000000>>n)&self)==0{n+=1}
+        n
+    }
+}
 
 #[test]
 fn test_bit_vec()
