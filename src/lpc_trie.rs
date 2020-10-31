@@ -92,7 +92,7 @@ impl<T:BitVec> InternalNode<T> {
                 }
             }
         }
-        TrieNode::NODE(std::mem::take(self))
+        TrieNode::NODE(Box::new(std::mem::take(self)))
     }
 
 
@@ -202,8 +202,8 @@ struct Leaf<T> {
 
 #[derive(Debug)]
 enum TrieNode<T> {
-    NODE(InternalNode<T>),
-    LEAF(Leaf<T>),
+    NODE(Box<InternalNode<T>>),
+    LEAF(Box<Leaf<T>>),
     NONE,
 }
 
@@ -268,21 +268,21 @@ impl<T:BitVec> TrieNode<T>{
         match self {
             TrieNode::NONE => {TrieNode::NONE}
             TrieNode::NODE(n) => {
-                TrieNode::NODE(InternalNode{
+                TrieNode::NODE(Box::new(InternalNode{
                     key: n.key,
                     pos: n.pos,
                     bits: n.bits,
                     full_children: n.full_children,
                     empty_children: n.empty_children,
                     child: std::mem::take(&mut n.child)
-                })
+                }))
             }
             TrieNode::LEAF(l)=>{
-                TrieNode::LEAF(Leaf{
+                TrieNode::LEAF(Box::new(Leaf{
                     key:l.key,
                     prefix:l.prefix,
                     value:std::mem::take(&mut l.value)
-                })
+                }))
             }
         }
 
@@ -394,7 +394,7 @@ impl<T:BitVec> LPCTrie<T>{
             TrieNode::NODE(_) | TrieNode::LEAF(_) => {
                 let new_pos = key.mismatch(pos, &trie.key());
                 let mut node = InternalNode::new(trie.key(), new_pos, 1);
-                let mut leaf = TrieNode::LEAF(Leaf { key, prefix, value:value.clone() });
+                let mut leaf = TrieNode::LEAF(Box::new(Leaf { key, prefix, value:value.clone() }));
                 if key.extract_bits(new_pos, 1).is_empty() {
                     node.put_child(0, &mut leaf);
                     node.put_child(1, trie);
@@ -405,7 +405,7 @@ impl<T:BitVec> LPCTrie<T>{
                 node.resize()
             }
             TrieNode::NONE => {
-                TrieNode::LEAF(Leaf { key, prefix,value:value.clone() })
+                TrieNode::LEAF(Box::new(Leaf { key, prefix,value:value.clone() }))
             }
         }
     }
