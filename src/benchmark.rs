@@ -8,7 +8,7 @@ use std::convert::TryInto;
 use std::fs::File;
 
 #[cfg(test)]
-fn read_file() -> geoip::GeoIPList {
+pub fn read_file() -> geoip::GeoIPList {
     let file = "data/geoip.dat";
     let mut f = match File::open(&file) {
         Ok(f) => f,
