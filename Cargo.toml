@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 protobuf = { version = "2.18.0", features = ["with-bytes"] }
+deepsize ="0.2.0"
+radix_trie = "0.2"
 
 [build-dependencies]
 protoc-rust = "2.0"
