@@ -1,4 +1,4 @@
-use crate::geoip::{GeoIP, GeoIPList, CIDR};
+use crate::geoip::GeoIP;
 use std::cmp::Ordering;
 use std::convert::TryInto;
 
@@ -29,7 +29,7 @@ impl V6 {
     fn new(vec: &Vec<u8>) -> V6 {
         let inner = vec[0..8].try_into().unwrap();
         let inner2 = vec[0..8].try_into().unwrap();
-        let mut v6 = V6 {
+        let v6 = V6 {
             a: u64::from_be_bytes(inner),
             b: u64::from_be_bytes(inner2),
         };
@@ -49,20 +49,20 @@ impl V6 {
 
     fn normalize(&mut self, prefix: u8) {
         if prefix <= 64 {
-            self.a = (self.a >> (64 - prefix) << (64 - prefix));
+            self.a = self.a >> (64 - prefix) << (64 - prefix);
             self.b = 0;
         } else {
-            self.b = (self.b >> (128 - prefix) << (128 - prefix));
+            self.b = self.b >> (128 - prefix) << (128 - prefix);
         }
     }
     fn normalize6(ip: &V6, prefix: u8) -> V6 {
         let mut a = 0u64;
-        let mut b = 0u64;
+        let b: u64;
         if prefix <= 64 {
-            a = (ip.a >> (64 - prefix) << (64 - prefix));
+            a = ip.a >> (64 - prefix) << (64 - prefix);
             b = 0;
         } else {
-            b = (ip.b >> (128 - prefix) << (128 - prefix));
+            b = ip.b >> (128 - prefix) << (128 - prefix);
         }
         V6 { a, b }
     }
@@ -84,7 +84,7 @@ impl GeoIPMatcher {
         let mut r = self.ip4.len();
         let mut l: usize = 0;
         while l < r {
-            let x = ((l + r) >> 1);
+            let x = (l + r) >> 1;
             if ip < self.ip4[x] {
                 r = x;
                 continue;
@@ -106,7 +106,7 @@ impl GeoIPMatcher {
         let mut r = self.ip6.len();
         let mut l: usize = 0;
         while l < r {
-            let x = ((l + r) >> 1);
+            let x = (l + r) >> 1;
             if ip < &self.ip6[x] {
                 r = x;
                 continue;
