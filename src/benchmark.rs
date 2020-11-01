@@ -9,7 +9,7 @@ use std::fs::File;
 
 #[cfg(test)]
 fn read_file() -> geoip::GeoIPList {
-    let file = "src/geoip.dat";
+    let file = "data/geoip.dat";
     let mut f = match File::open(&file) {
         Ok(f) => f,
         Err(e) => {
