@@ -1,6 +1,7 @@
 use crate::bit_vec::BitVec;
+use deepsize::DeepSizeOf;
 
-#[derive(Debug)]
+#[derive(Debug, DeepSizeOf)]
 struct InternalNode<T> {
     key: T,
     pos: u32,
@@ -196,14 +197,14 @@ impl<T: BitVec> InternalNode<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, DeepSizeOf)]
 struct Leaf<T> {
     key: T,
     prefix: u8,
     value: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, DeepSizeOf)]
 enum TrieNode<T> {
     NODE(Box<InternalNode<T>>),
     LEAF(Box<Leaf<T>>),
@@ -287,6 +288,7 @@ impl<T: BitVec> TrieNode<T> {
     }
 }
 
+#[derive(DeepSizeOf)]
 pub struct LPCTrie<T> {
     trie: TrieNode<T>,
     size: u32,
