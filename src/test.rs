@@ -103,6 +103,18 @@ fn test_lpc() {
                 lpc_trie_cn_us_v6.get_with_value(u128::from_be_bytes(us_ip.octets())),
                 "US"
             );
+            assert_eq!(
+                lpc_trie_us_v6.remove(u128::from_be_bytes(us_ip.octets())),
+                true
+            );
+            assert_eq!(
+                lpc_trie_us_v6.get(u128::from_be_bytes(us_ip.octets())),
+                false
+            );
+            assert_eq!(
+                lpc_trie_us_v6.get_with_value(u128::from_be_bytes(us_ip.octets())),
+                ""
+            );
         }
     }
     lpc_trie_cn_us_v6.clear();

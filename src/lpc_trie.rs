@@ -370,8 +370,46 @@ impl<T: BitVec> LPCTrie<T> {
         }
     }
 
+    pub fn remove(&mut self, key: T) -> bool {
+        self.key_found = false;
+        let mut trie = std::mem::take(&mut self.trie);
+        let trie = self.remove_impl(key, &mut trie);
+        self.trie = trie;
+        if self.key_found {
+            self.size -= 1;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     pub fn empty(&self) -> bool {
         self.size == 0
+    }
+
+    fn remove_impl(&mut self, key: T, trie: &mut TrieNode<T>) -> TrieNode<T> {
+        return match trie {
+            TrieNode::NODE(inode) => {
+                let bitpat = key.extract_bits(inode.pos, inode.bits).safe_to_usize();
+                let mut n = self.remove_impl(key, inode.get_mut_child(bitpat));
+                inode.put_child(bitpat, &mut n);
+                inode.resize()
+            }
+            TrieNode::LEAF(l) => {
+                let result = if l.prefix == (std::mem::size_of::<T>() * 8) as u8 {
+                    l.key == key
+                } else {
+                    l.key.sub_equal(0, l.prefix as u32, &key)
+                };
+                if result {
+                    self.key_found = true;
+                    TrieNode::NONE
+                } else {
+                    std::mem::take(trie)
+                }
+            }
+            TrieNode::NONE => TrieNode::NONE,
+        };
     }
 
     fn insert_impl(
@@ -438,20 +476,57 @@ fn test_lpc_trie() {
         u32::from_bit_str("10011110"),
     ];
     for bv in bitvecs {
-        trie.put(bv, 1, "fake".to_string());
+        trie.put(bv, 32, "fake".to_string());
     }
     assert_eq!(trie.get(u32::from_bit_str("00010000")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("00010000")), true);
+    assert_eq!(trie.get(u32::from_bit_str("00010000")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("01000010")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("01000010")), true);
+    assert_eq!(trie.get(u32::from_bit_str("01000010")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("00001010")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("00001010")), true);
+    assert_eq!(trie.get(u32::from_bit_str("00001010")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("00101011")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("00101011")), true);
+    assert_eq!(trie.get(u32::from_bit_str("00101011")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("10101101")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("10101101")), true);
+    assert_eq!(trie.get(u32::from_bit_str("10101101")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("10110110")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("10110110")), true);
+    assert_eq!(trie.get(u32::from_bit_str("10110110")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("11011011")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("11011011")), true);
+    assert_eq!(trie.get(u32::from_bit_str("11011011")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("01101110")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("01101110")), true);
+    assert_eq!(trie.get(u32::from_bit_str("01101110")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("10111010")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("10111010")), true);
+    assert_eq!(trie.get(u32::from_bit_str("10111010")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("11101001")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("11101001")), true);
+    assert_eq!(trie.get(u32::from_bit_str("11101001")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("10100111")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("10100111")), true);
+    assert_eq!(trie.get(u32::from_bit_str("10100111")), false);
+
     assert_eq!(trie.get(u32::from_bit_str("10011110")), true);
+    assert_eq!(trie.remove(u32::from_bit_str("10011110")), true);
+    assert_eq!(trie.get(u32::from_bit_str("10011110")), false);
+
+    assert_eq!(trie.empty(), true);
 
     let mut trie = LPCTrie::new();
     let bitvecs: Vec<u64> = vec![
