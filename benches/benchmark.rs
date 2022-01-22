@@ -1,8 +1,9 @@
+#![feature(test)]
 extern crate test;
-use crate::cidr_bs::GeoIPMatcher;
-use crate::geoip;
-use crate::geoip::GeoIPList;
-use crate::lpc_trie::LPCTrie;
+use cidr_matcher::cidr_bs::GeoIPMatcher;
+use cidr_matcher::geoip;
+use cidr_matcher::geoip::GeoIPList;
+use cidr_matcher::lpc_trie::LPCTrie;
 use radix_trie::Trie;
 use std::convert::TryInto;
 use std::fs::File;
@@ -17,7 +18,7 @@ pub fn read_file() -> geoip::GeoIPList {
         }
     };
     let geo_ip_list: geoip::GeoIPList =
-        match protobuf::parse_from_reader::<geoip::GeoIPList>(&mut f) {
+        match protobuf::Message::parse_from_reader(&mut f) {
             Ok(v) => v,
             Err(e) => {
                 panic!("dat file {} has invalid format: {}", file, e);

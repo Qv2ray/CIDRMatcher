@@ -8,10 +8,15 @@ edition = "2018"
 
 [dependencies]
 deepsize ="0.2.0"
-
-[build-dependencies]
-protoc-rust = "2.0"
-
-[dev-dependencies]
 protobuf = { version = "2.18.0", features = ["with-bytes"] }
 radix_trie = "0.2"
+
+[build-dependencies]
+protoc-rust = "2.22.1"
+
+# [dev-dependencies]
+[profile.release]
+debug = true
+
+[profile.bench]
+debug = true

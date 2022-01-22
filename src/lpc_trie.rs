@@ -26,8 +26,8 @@ impl<T: BitVec> Default for InternalNode<T> {
 }
 
 impl<T: BitVec> InternalNode<T> {
-    const HALVE_THRESHOLD: u32 = 25;
-    const INFLATE_THRESHOLD: u32 = 50;
+    const HALVE_THRESHOLD: u32 = 1;
+    const INFLATE_THRESHOLD: u32 = 3;
     pub fn new(key: T, pos: u32, bits: u32) -> InternalNode<T> {
         InternalNode {
             key,
@@ -247,21 +247,9 @@ impl<T: BitVec> Clone for TrieNode<T> {
             TrieNode::NONE => TrieNode::NONE,
             TrieNode::NODE(_) => {
                 unimplemented!()
-                //TrieNode::NODE(InternalNode{
-                //    key: n.key,
-                //    pos: n.pos,
-                //    bits: n.bits,
-                //    full_children: n.full_children,
-                //    empty_children: n.empty_children,
-                //    child: n.child.clone()
-                //})
             }
             TrieNode::LEAF(_) => {
                 unimplemented!();
-                //TrieNode::LEAF(Leaf{
-                //    key:l.key,
-                //    prefix:l.prefix
-                //})
             }
         }
     }
