@@ -1,8 +1,8 @@
+use crate::geoip;
 use crate::lpc_trie::LPCTrie;
 use std::convert::TryInto;
-use std::net::IpAddr;
-use crate::geoip;
 use std::fs::File;
+use std::net::IpAddr;
 
 #[cfg(test)]
 pub fn read_file() -> geoip::GeoIPList {
@@ -13,13 +13,12 @@ pub fn read_file() -> geoip::GeoIPList {
             panic!("open dat file {} failed: {}", file, e);
         }
     };
-    let geo_ip_list: geoip::GeoIPList =
-        match protobuf::Message::parse_from_reader(&mut f) {
-            Ok(v) => v,
-            Err(e) => {
-                panic!("dat file {} has invalid format: {}", file, e);
-            }
-        };
+    let geo_ip_list: geoip::GeoIPList = match protobuf::Message::parse_from_reader(&mut f) {
+        Ok(v) => v,
+        Err(e) => {
+            panic!("dat file {} has invalid format: {}", file, e);
+        }
+    };
     geo_ip_list
 }
 #[test]

@@ -1,14 +1,12 @@
-#![feature(test)]
-extern crate test;
 use cidr_matcher::cidr_bs::GeoIPMatcher;
 use cidr_matcher::geoip;
 use cidr_matcher::geoip::GeoIPList;
 use cidr_matcher::lpc_trie::LPCTrie;
+use criterion::{criterion_group, criterion_main, Criterion};
 use radix_trie::Trie;
 use std::convert::TryInto;
 use std::fs::File;
 
-#[cfg(test)]
 pub fn read_file() -> geoip::GeoIPList {
     let file = "data/geoip.dat";
     let mut f = match File::open(&file) {
@@ -17,18 +15,16 @@ pub fn read_file() -> geoip::GeoIPList {
             panic!("open dat file {} failed: {}", file, e);
         }
     };
-    let geo_ip_list: geoip::GeoIPList =
-        match protobuf::Message::parse_from_reader(&mut f) {
-            Ok(v) => v,
-            Err(e) => {
-                panic!("dat file {} has invalid format: {}", file, e);
-            }
-        };
+    let geo_ip_list: geoip::GeoIPList = match protobuf::Message::parse_from_reader(&mut f) {
+        Ok(v) => v,
+        Err(e) => {
+            panic!("dat file {} has invalid format: {}", file, e);
+        }
+    };
     geo_ip_list
 }
 
-#[bench]
-fn benchmark_lpc(b: &mut test::Bencher) {
+fn benchmark_lpc(b: &mut Criterion) {
     let mut geoip_list = read_file();
     let mut lpc_trie_cn_v6 = LPCTrie::<u128>::new();
     let mut lpc_trie_cn_v4 = LPCTrie::<u32>::new();
@@ -56,11 +52,12 @@ fn benchmark_lpc(b: &mut test::Bencher) {
             }
         }
     }
-    b.iter(|| benchmark_lpc_impl(&lpc_trie_cn_v6, &lpc_trie_cn_v4, &geoip_list));
+    b.bench_function("benchmark lpc", |b| {
+        b.iter(|| benchmark_lpc_impl(&lpc_trie_cn_v6, &lpc_trie_cn_v4, &geoip_list))
+    });
 }
 
-#[bench]
-fn benchmark_radix(b: &mut test::Bencher) {
+fn benchmark_radix(b: &mut Criterion) {
     let mut geoip_list = read_file();
     let mut radix_trie_v6 = Trie::<Vec<u8>, String>::new();
     let mut radix_trie_v4 = Trie::<u32, String>::new();
@@ -85,11 +82,12 @@ fn benchmark_radix(b: &mut test::Bencher) {
             }
         }
     }
-    b.iter(|| benchmark_radix_trie_impl(&radix_trie_v4, &radix_trie_v6, &geoip_list));
+    b.bench_function("benchmark radix trie", |b| {
+        b.iter(|| benchmark_radix_trie_impl(&radix_trie_v4, &radix_trie_v6, &geoip_list))
+    });
 }
 
-#[bench]
-fn benchmark_v2ray_core_matcher(b: &mut test::Bencher) {
+fn benchmark_v2ray_core_matcher(b: &mut Criterion) {
     let mut geoip_list = read_file();
     let mut matcher = GeoIPMatcher::new();
     for i in geoip_list.entry.iter_mut() {
@@ -97,10 +95,11 @@ fn benchmark_v2ray_core_matcher(b: &mut test::Bencher) {
             matcher.put(i);
         }
     }
-    b.iter(|| benchmark_geoip_matcher_impl(&matcher, &geoip_list));
+    b.bench_function("benchmark bs-matcher", |b| {
+        b.iter(|| benchmark_geoip_matcher_impl(&matcher, &geoip_list))
+    });
 }
 
-#[cfg(test)]
 fn benchmark_lpc_impl(
     lpc_trie_v6: &LPCTrie<u128>,
     lpc_trie_v4: &LPCTrie<u32>,
@@ -126,7 +125,6 @@ fn benchmark_lpc_impl(
     }
 }
 
-#[cfg(test)]
 fn benchmark_geoip_matcher_impl(matcher: &GeoIPMatcher, geoip_list: &GeoIPList) {
     for i in geoip_list.entry.iter() {
         for pair in i.cidr.iter() {
@@ -135,7 +133,6 @@ fn benchmark_geoip_matcher_impl(matcher: &GeoIPMatcher, geoip_list: &GeoIPList) 
     }
 }
 
-#[cfg(test)]
 fn benchmark_radix_trie_impl(
     trie_v4: &Trie<u32, String>,
     trie_v6: &Trie<Vec<u8>, String>,
@@ -161,3 +158,5 @@ fn benchmark_radix_trie_impl(
         }
     }
 }
+criterion_group!(benches, benchmark_radix, benchmark_lpc, benchmark_v2ray_core_matcher);
+criterion_main!(benches);
