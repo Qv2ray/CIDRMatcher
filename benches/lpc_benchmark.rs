@@ -158,5 +158,10 @@ fn benchmark_radix_trie_impl(
         }
     }
 }
-criterion_group!(benches, benchmark_radix, benchmark_lpc, benchmark_v2ray_core_matcher);
+criterion_group!(
+    benches,
+    benchmark_radix,
+    benchmark_lpc,
+    benchmark_v2ray_core_matcher
+);
 criterion_main!(benches);

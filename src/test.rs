@@ -1,5 +1,6 @@
 use crate::geoip;
 use crate::lpc_trie::LPCTrie;
+use deepsize::DeepSizeOf;
 use std::convert::TryInto;
 use std::fs::File;
 use std::net::IpAddr;
@@ -62,6 +63,14 @@ fn test_lpc() {
             }
         }
     }
+    let s1 = lpc_trie_cn_v4.deep_size_of() as f64 / (1024.0 * 1024.0);
+    let s2 = lpc_trie_cn_v6.deep_size_of() as f64 / (1024.0 * 1024.0);
+    println!(
+        "lpc_trie_cn_v4 size:{}M, lpc_trie_cn_v6:{}M, total: {}M",
+        s1,
+        s2,
+        s1 + s2
+    );
     let mut lpc_trie_us_v6 = LPCTrie::<u128>::new();
     for i in geoip_list.entry.iter() {
         for pair in i.cidr.iter() {

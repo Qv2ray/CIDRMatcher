@@ -201,7 +201,7 @@ impl<T: BitVec> InternalNode<T> {
 struct Leaf<T> {
     key: T,
     prefix: u8,
-    value: String,
+    value: usize,
 }
 
 #[derive(Debug, DeepSizeOf)]
@@ -281,6 +281,7 @@ pub struct LPCTrie<T> {
     trie: TrieNode<T>,
     size: u32,
     key_found: bool,
+    vec: Vec<String>,
 }
 
 impl<T: BitVec> LPCTrie<T> {
@@ -289,6 +290,7 @@ impl<T: BitVec> LPCTrie<T> {
             trie: Default::default(),
             size: 0,
             key_found: false,
+            vec: vec![],
         }
     }
 
@@ -300,7 +302,14 @@ impl<T: BitVec> LPCTrie<T> {
     pub fn put(&mut self, key: T, prefix: u8, value: String) {
         self.key_found = false;
         let mut trie = std::mem::take(&mut self.trie);
-        let trie = self.insert_impl(key, prefix, value, &mut trie, 0);
+        let pos = if let Some(p) = self.vec.iter().position(|x| x == &value) {
+            p
+        } else {
+            let len = self.vec.len();
+            self.vec.push(value);
+            len
+        };
+        let trie = self.insert_impl(key, prefix, pos, &mut trie, 0);
         self.trie = trie;
         if !self.key_found {
             self.size += 1;
@@ -318,9 +327,9 @@ impl<T: BitVec> LPCTrie<T> {
                     TrieNode::LEAF(l) => {
                         // full length prefix
                         return if l.prefix == (std::mem::size_of::<T>() * 8) as u8 && l.key == key {
-                            l.value.as_str()
+                            self.vec[l.value].as_str()
                         } else if l.key.sub_equal(0, l.prefix as u32, &key) {
-                            l.value.as_str()
+                            self.vec[l.value].as_str()
                         } else {
                             ""
                         };
@@ -404,7 +413,7 @@ impl<T: BitVec> LPCTrie<T> {
         &mut self,
         key: T,
         prefix: u8,
-        value: String,
+        value: usize,
         trie: &mut TrieNode<T>,
         pos: u32,
     ) -> TrieNode<T> {
